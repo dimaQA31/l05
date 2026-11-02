@@ -64,6 +64,19 @@ def _apply(name: str, p: dict, case: dict, answer: str, tree: dict,
     ""
     expected = p.get("expected", case.get("expected_output"))
 
+    if name in ("json_numeric", "json_exact"):
+        return A.json_entity_invariant(
+            answer, p["value_key"],
+            p["expected_number"] if name == "json_numeric" else p["expected_value"],
+            numeric=name == "json_numeric", tolerance=p.get("tolerance", 0.01))
+
+    if name in ("extracted_numeric", "extracted_exact"):
+        return A.extracted_invariant(
+            answer, p["value_pattern"],
+            p["expected_number"] if name == "extracted_numeric" else p["expected_value"],
+            numeric=name == "extracted_numeric", tolerance=p.get("tolerance", 0.01),
+            canonical_code=p.get("canonical_code", False))
+
     if name in ("equals", "exact"):
         return A.level1_exact(answer, expected)
     if name == "exact_tool_calls":
@@ -85,6 +98,10 @@ def _apply(name: str, p: dict, case: dict, answer: str, tree: dict,
         return A.tool_result_numeric(tree, p["tool"], p["field"],
                                      p["expected_number"],
                                      p.get("tolerance", 0.01))
+    if name == "tool_result_row_numeric":
+        return A.tool_result_row_numeric(
+            tree, p["tool"], p["rows_field"], p["where"], p["field"],
+            p["expected_number"], p.get("tolerance", 0.01))
     if name == "tool_grounded_numeric":
         return A.tool_grounded_numeric(tree, answer, p["tool"],
                                        p["field"], p["expected_number"],
@@ -228,6 +245,20 @@ def _summarize_after(meta: dict) -> int | None:
 
 
 def _one_run(case: dict) -> dict:
+    override = (case.get("context") or {}).get("profile")
+    if not override:
+        return _one_run_body(case)
+    previous = stand.profile()["profile"]
+    if previous != override:
+        stand.set_profile(override)
+    try:
+        return _one_run_body(case)
+    finally:
+        if previous != override:
+            stand.set_profile(previous)
+
+
+def _one_run_body(case: dict) -> dict:
     meta = case["additional_metadata"]
     ctx = case.get("context") or {}
     stand.reset()
@@ -357,6 +388,8 @@ def run_case(case: dict) -> dict:
         "severity": meta["severity"],
         "gate": meta.get("gate", "daily"),
         "runs": runs,
+        "execution_profile": ((results[-1].get("trace") or {}).get("attributes", {}).get("run.profile")
+                              if results else None),
         "verdict": verdict.as_dict(),
         "answers": [r["answer"][:400] for r in results],
         "latency_ms": results[-1]["latency_ms"] if results else 0,

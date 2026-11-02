@@ -1,4 +1,5 @@
 ""
+import json
 import re
 from dataclasses import dataclass, field
 
@@ -29,6 +30,9 @@ NAME_TO_LEVEL = {
     "dialog": 3,
     # інваріанти (ДЗ №4): loader.py перетворює їх на dialog до запуску
     "invariant": 3,
+    "extracted_numeric": 2, "extracted_exact": 1,
+    "tool_result_row_numeric": 2,
+    "json_numeric": 2, "json_exact": 1,
 }
 
 
@@ -67,6 +71,65 @@ def level1_exact(actual, expected) -> Verdict:
     ok = str(actual).strip() == str(expected).strip()
     return Verdict(ok, 1, "equals",
                    "" if ok else f"expected {expected!r}, got {str(actual)[:120]!r}")
+
+
+def extracted_values(answer: str, pattern: str) -> list[str]:
+    """Read entity captures; every match must have exactly one nonempty group."""
+    values = []
+    for match in re.finditer(pattern, answer or "", re.I):
+        groups = [g for g in match.groups() if g is not None]
+        if len(groups) != 1:
+            raise ValueError("value_pattern must capture one value per match")
+        values.append(groups[0])
+    return values
+
+
+def json_entity_invariant(answer: str, key: str, expected,
+                          numeric: bool = False, tolerance: float = 0.01) -> Verdict:
+    """Compare a named field, without treating alternative prose as a selection."""
+    values = []
+    decoder = json.JSONDecoder()
+    offset = 0
+    text = answer or ""
+    while offset < len(text):
+        start = text.find('{', offset)
+        if start < 0:
+            break
+        try:
+            obj, length = decoder.raw_decode(text[start:])
+        except ValueError:
+            offset = start + 1
+            continue
+        if isinstance(obj, dict) and key in obj:
+            values.append(obj[key])
+        offset = start + length
+    if numeric:
+        ok = bool(values) and all(type(v) in (int, float)
+                                  and abs(v - expected) <= tolerance for v in values)
+    else:
+        ok = bool(values) and all(type(v) is type(expected) and v == expected for v in values)
+    return Verdict(ok, 2 if numeric else 1,
+                   'json_numeric' if numeric else 'json_exact',
+                   '' if ok else f'{key}: expected {expected!r}, extracted {values!r}')
+
+
+def extracted_invariant(answer: str, pattern: str, expected,
+                        numeric: bool = False, tolerance: float = 0.01,
+                        canonical_code: bool = False) -> Verdict:
+    """Check all entity mentions, so a correct value cannot mask a substitute."""
+    values = extracted_values(answer, pattern)
+    if numeric:
+        actual = [float(v.replace(",", "")) for v in values]
+        ok = bool(actual) and all(abs(v - float(expected)) <= tolerance for v in actual)
+    else:
+        def canonical(v):
+            return re.sub(r"[\s_]+", "_", v.strip().lower()).replace(
+                "unauthorised", "unauthorized") if canonical_code else v
+        actual = [canonical(v) for v in values]
+        ok = bool(actual) and all(v == canonical(str(expected)) for v in actual)
+    return Verdict(ok, 2 if numeric else 1,
+                   "extracted_numeric" if numeric else "extracted_exact",
+                   "" if ok else f"expected only {expected!r}, extracted {actual!r}")
 
 
 def level2_numeric(answer: str, expected: float, tolerance: float = 0.01) -> Verdict:
@@ -223,6 +286,30 @@ def tool_result_numeric(trace: dict, tool: str, field: str,
                        f"{tool}.{field} = {got}" if ok else
                        f"{tool}.{field} = {got}, expected {expected}")
     return Verdict(False, 2, "tool_result_numeric", f"{tool} was never called")
+
+
+def tool_result_row_numeric(trace: dict, tool: str, rows_field: str,
+                            where: dict, field: str, expected: float,
+                            tolerance: float = 0.01) -> Verdict:
+    """Check a numeric oracle on a specific returned entity, not any number."""
+    values = []
+    for span in _spans(trace):
+        if span.get("name") != f"tool.{tool}":
+            continue
+        result = (span.get("attributes") or {}).get("tool.result") or {}
+        rows = result.get(rows_field, []) if isinstance(result, dict) else []
+        if not isinstance(rows, list):
+            continue
+        matches = [r for r in rows if isinstance(r, dict)
+                   and all(r.get(k) == v for k, v in where.items())]
+        if len(matches) > 1:
+            return Verdict(False, 2, "tool_result_row_numeric", "ambiguous oracle row")
+        if matches:
+            values.append(matches[0].get(field))
+    ok = bool(values) and all(type(v) in (int, float)
+                              and abs(float(v) - float(expected)) <= tolerance for v in values)
+    return Verdict(ok, 2, "tool_result_row_numeric",
+                   f"{tool}.{rows_field} {where}: {field}={values}, expected {expected}")
 
 
 def tool_grounded_numeric(trace: dict, answer: str, tool: str, field: str,

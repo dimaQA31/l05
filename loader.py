@@ -1,6 +1,7 @@
 ""
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from assertions import NAME_TO_LEVEL
@@ -153,7 +154,10 @@ def _compile_invariants(case: dict, meta: dict, where: str) -> None:
     additional_metadata.invariants. Every invariant names the entity, the step
     it starts to hold from, the ladder level, and HOW to read it: `probe_turns`
     (the steps where the reply must show the entity) plus a `pattern`
-    (level 3) or `expected_number` (level 2). `forbid` adds a not_regex."""
+    (level 3) or `expected_number` (level 2). A `value_pattern` reads captured
+    entity values and compares all of them with `expected_value` (level 1)
+    or `expected_number` (level 2). `check_baseline` requires the initial
+    entity value before grading probes. `forbid` adds a not_regex."""
     invs = meta.get("invariants")
     if not invs:
         raise SetError(f"{where}: assertion 'invariant' needs invariants")
@@ -202,17 +206,48 @@ def _compile_invariants(case: dict, meta: dict, where: str) -> None:
             if not isinstance(t, int) or not inv["from_turn"] < t <= n:
                 raise SetError(f"{at}: probe turn {t!r} must be after from_turn "
                                f"{inv['from_turn']} and within 1..{n}")
-        if "expected_number" in inv:
+        if "value_key" in inv:
+            if not isinstance(inv["value_key"], str) or not inv["value_key"]:
+                raise SetError(f"{at}: value_key must be a nonempty JSON key")
+            if "expected_number" in inv:
+                base = {"assertion": "json_numeric", "expected_number": inv["expected_number"],
+                        "tolerance": inv.get("tolerance", 0.01)}
+                want = 2
+            elif "expected_value" in inv:
+                base = {"assertion": "json_exact", "expected_value": inv["expected_value"]}
+                want = 1
+            else:
+                raise SetError(f"{at}: value_key needs expected_number or expected_value")
+            base["value_key"] = inv["value_key"]
+        elif "value_pattern" in inv:
+            if re.compile(inv["value_pattern"]).groups < 1:
+                raise SetError(f"{at}: value_pattern needs a capture group")
+            if "expected_number" in inv:
+                base = {"assertion": "extracted_numeric", "expected_number": inv["expected_number"],
+                        "tolerance": inv.get("tolerance", 0.01)}
+                want = 2
+            elif "expected_value" in inv:
+                base = {"assertion": "extracted_exact", "expected_value": inv["expected_value"],
+                        "canonical_code": inv.get("canonical_code", False)}
+                want = 1
+            else:
+                raise SetError(f"{at}: value_pattern needs expected_number or expected_value")
+            base["value_pattern"] = inv["value_pattern"]
+        elif "expected_number" in inv:
             base = {"assertion": "numeric", "expected_number": inv["expected_number"],
                     "tolerance": inv.get("tolerance", 0.01)}
+            want = 2
         elif "pattern" in inv:
             base = {"assertion": "regex", "pattern": inv["pattern"]}
+            want = 3
         else:
             raise SetError(f"{at}: needs pattern or expected_number")
-        want = 2 if "expected_number" in inv else 3
         if inv["level"] != want:
             raise SetError(f"{at}: level {inv['level']} does not match the check "
-                           f"({'numeric' if want == 2 else 'regex'} is level {want})")
+                           f"({base['assertion']} is level {want})")
+        if inv.get("check_baseline"):
+            checks.append({**base, "turn": inv["from_turn"], "precondition": True,
+                           "label": f"{inv['entity']}: baseline exists and matches oracle"})
         if inv.get("probe_any"):
             # the entity need not be named on every probe step (the question may
             # not ask for it): one step of the list showing it is enough

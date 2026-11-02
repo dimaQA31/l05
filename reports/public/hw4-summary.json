@@ -1,0 +1,238 @@
+{
+  "set": "l05_dialogs",
+  "set_hash": "ee92912da217",
+  "case_count": 5,
+  "runs_per_case": 5,
+  "forecast_commit": "6ea4cee",
+  "profiles": {
+    "clean": {
+      "cases_passed": 5,
+      "cases_total": 5,
+      "repeats_passed": 25,
+      "repeats_total": 25,
+      "agent_steps": 180,
+      "provider_calls": 331,
+      "cases": [
+        {
+          "id": "CONV-002",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0,
+            "reason_code": 0,
+            "transaction_date": 0,
+            "filing_window_days": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-SHORT",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0,
+            "reason_code": 0,
+            "transaction_date": 0,
+            "filing_window_days": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-LONG-SEPA",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0,
+            "reason_code": 0,
+            "transaction_date": 0,
+            "filing_window_days": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-CLEAN",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0,
+            "reason_code": 0,
+            "transaction_date": 0,
+            "filing_window_days": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-ONE-ENTITY",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    "lesson-05": {
+      "cases_passed": 1,
+      "cases_total": 5,
+      "repeats_passed": 6,
+      "repeats_total": 25,
+      "agent_steps": 180,
+      "provider_calls": 375,
+      "cases": [
+        {
+          "id": "CONV-002",
+          "execution_profile": "lesson-05",
+          "passed": 1,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 4,
+            "reason_code": 0,
+            "transaction_date": 4,
+            "filing_window_days": 3
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            5,
+            5,
+            5,
+            5,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-SHORT",
+          "execution_profile": "lesson-05",
+          "passed": 0,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 3,
+            "reason_code": 4,
+            "transaction_date": 5,
+            "filing_window_days": 3
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 3,
+          "first_failure_turns": [
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        },
+        {
+          "id": "CONV-002-LONG-SEPA",
+          "execution_profile": "lesson-05",
+          "passed": 0,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 4,
+            "reason_code": 0,
+            "transaction_date": 5,
+            "filing_window_days": 4
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            8,
+            8,
+            8,
+            8,
+            8
+          ]
+        },
+        {
+          "id": "CONV-002-CLEAN",
+          "execution_profile": "clean",
+          "passed": 5,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 0,
+            "reason_code": 0,
+            "transaction_date": 0,
+            "filing_window_days": 0
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "id": "CONV-002-ONE-ENTITY",
+          "execution_profile": "lesson-05",
+          "passed": 0,
+          "total": 5,
+          "entity_probe_failures": {
+            "dispute_amount": 5
+          },
+          "baseline_failures": 0,
+          "unreadable_json_repeats": 0,
+          "first_failure_turns": [
+            5,
+            5,
+            5,
+            5,
+            5
+          ]
+        }
+      ]
+    }
+  },
+  "notes": [
+    "CLEAN control always runs on clean, including the lesson-05 invocation.",
+    "Three SHORT repeats on lesson-05 had incomplete/unreadable JSON; these are not classified as pure D07.",
+    "Full traces and customer/account/session data are retained locally and are not published."
+  ]
+}

@@ -4,3 +4,20 @@ reports/public/*
 !reports/public/hw4-summary.json
 .env
 __pycache__/
+
+# Original runner reports from the synthetic PayPilot stand.
+!reports/l05-clean-20261027T123708.json
+!reports/l05-lesson-05-20261027T123840.json
+!reports/l05_dialogs-clean-20261102T184224.json
+!reports/l05_dialogs-lesson-05-20261102T185249.json
+# Primary inputs for the historical profile discussed in sections 2.3–3.3.
+!reports/c07-seven-step-full-inputs/
+reports/c07-seven-step-full-inputs/*
+!reports/c07-seven-step-full-inputs/20261102-batch/
+reports/c07-seven-step-full-inputs/20261102-batch/*
+!reports/c07-seven-step-full-inputs/20261102-batch/events.jsonl
+!reports/c07-clean-full-inputs/
+reports/c07-clean-full-inputs/*
+!reports/c07-clean-full-inputs/20261102-control/
+reports/c07-clean-full-inputs/20261102-control/*
+!reports/c07-clean-full-inputs/20261102-control/run.json
